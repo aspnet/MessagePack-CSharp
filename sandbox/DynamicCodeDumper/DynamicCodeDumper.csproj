@@ -58,9 +58,6 @@
     <Compile Include="..\..\src\MessagePack\Internal\UnsafeMemory.Low.cs">
       <Link>Code\UnsafeMemory.Low.cs</Link>
     </Compile>
-    <Compile Include="..\..\src\MessagePack\MessagePackBinary.cs">
-      <Link>Code\MessagePackBinary.cs</Link>
-    </Compile>
     <Compile Include="..\..\src\MessagePack\ExtensionHeader.cs">
       <Link>Code\ExtensionHeader.cs</Link>
     </Compile>
