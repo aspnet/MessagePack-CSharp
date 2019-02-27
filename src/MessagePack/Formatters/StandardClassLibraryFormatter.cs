@@ -64,7 +64,7 @@ namespace MessagePack.Formatters
             }
             else
             {
-                writer.Write(value.AsSpan());
+                writer.Write(value);
             }
         }
 

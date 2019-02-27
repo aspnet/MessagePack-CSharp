@@ -374,7 +374,7 @@ namespace MessagePack
         /// <see cref="MessagePackCode.Str32"/>,
         /// </summary>
         /// <param name="value">The value to write.</param>
-        public void Write(ReadOnlySpan<char> value) => this.offset += MessagePackBinary.WriteString(ref this.bytes, this.offset, new string(value.ToArray()), this.OldSpec);
+        public void Write(ReadOnlySpan<char> value) => this.offset += MessagePackBinary.WriteString(ref this.bytes, this.offset, value, this.OldSpec);
 
         /// <summary>
         /// Writes the extension format header, using the smallest one of these codes:

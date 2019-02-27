@@ -1208,6 +1208,92 @@ namespace MessagePack
             }
         }
 
+        public static unsafe int WriteString(ref byte[] bytes, int offset, ReadOnlySpan<char> value, bool oldSpec = false)
+        {
+            if (value == null) return WriteNil(ref bytes, offset);
+
+            // MaxByteCount -> WritePrefix -> GetBytes has some overheads of `MaxByteCount`
+            // solves heuristic length check
+
+            // ensure buffer by MaxByteCount(faster than GetByteCount)
+            MessagePackBinary.EnsureCapacity(ref bytes, offset, StringEncoding.UTF8.GetMaxByteCount(value.Length) + 5);
+
+            int useOffset;
+            if (value.Length <= MessagePackRange.MaxFixStringLength)
+            {
+                useOffset = 1;
+            }
+            else if (value.Length <= byte.MaxValue && !oldSpec)
+            {
+                useOffset = 2;
+            }
+            else if (value.Length <= ushort.MaxValue)
+            {
+                useOffset = 3;
+            }
+            else
+            {
+                useOffset = 5;
+            }
+
+            // skip length area
+            var writeBeginOffset = offset + useOffset;
+            int byteCount;
+            fixed (char* pValue = value)
+            fixed (byte* pBytes = &bytes[writeBeginOffset])
+            {
+                byteCount = StringEncoding.UTF8.GetBytes(pValue, value.Length, pBytes, bytes.Length - writeBeginOffset);
+            }
+
+            // move body and write prefix
+            if (byteCount <= MessagePackRange.MaxFixStringLength)
+            {
+                if (useOffset != 1)
+                {
+                    Buffer.BlockCopy(bytes, writeBeginOffset, bytes, offset + 1, byteCount);
+                }
+                bytes[offset] = (byte)(MessagePackCode.MinFixStr | byteCount);
+                return byteCount + 1;
+            }
+            else if (byteCount <= byte.MaxValue && !oldSpec)
+            {
+                if (useOffset != 2)
+                {
+                    Buffer.BlockCopy(bytes, writeBeginOffset, bytes, offset + 2, byteCount);
+                }
+
+                bytes[offset] = MessagePackCode.Str8;
+                bytes[offset + 1] = unchecked((byte)byteCount);
+                return byteCount + 2;
+            }
+            else if (byteCount <= ushort.MaxValue)
+            {
+                if (useOffset != 3)
+                {
+                    Buffer.BlockCopy(bytes, writeBeginOffset, bytes, offset + 3, byteCount);
+                }
+
+                bytes[offset] = MessagePackCode.Str16;
+                bytes[offset + 1] = unchecked((byte)(byteCount >> 8));
+                bytes[offset + 2] = unchecked((byte)byteCount);
+                return byteCount + 3;
+            }
+            else
+            {
+                if (useOffset != 5)
+                {
+                    Buffer.BlockCopy(bytes, writeBeginOffset, bytes, offset + 5, byteCount);
+                }
+
+                bytes[offset] = MessagePackCode.Str32;
+                bytes[offset + 1] = unchecked((byte)(byteCount >> 24));
+                bytes[offset + 2] = unchecked((byte)(byteCount >> 16));
+                bytes[offset + 3] = unchecked((byte)(byteCount >> 8));
+                bytes[offset + 4] = unchecked((byte)byteCount);
+                return byteCount + 5;
+            }
+        }
+
         public static int WriteStringForceStr32Block(ref byte[] bytes, int offset, string value)
         {
             if (value == null) return WriteNil(ref bytes, offset);
