@@ -805,7 +805,7 @@ namespace MessagePack
                     }
                 }
 #endif
-                reader.Advance(bytesRead);
+                this.reader.Advance(bytesRead);
             }
 
             string value = new string(charArray, 0, initializedChars);
